@@ -12,9 +12,6 @@ license = { text = "MIT" }
 authors = [
     { name = "Daniyal", email = "57293258+DaniyalAhmadSE@users.noreply.github.com" }
 ]
-[project.urls]
-Homepage = "https://github.com/DaniyalAhmadSE/simplified-genai"
-
 keywords = ["llm", "genai", "gemini", "openai", "grok", "ai", "tools"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -34,6 +31,9 @@ dependencies = [
     "openai>=1.0.0",
     "xai-sdk>=1.8.1",
 ]
+
+[project.urls]
+Homepage = "https://github.com/DaniyalAhmadSE/simplified-genai"
 
 [dependency-groups]
 dev = [
