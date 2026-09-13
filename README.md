@@ -1,0 +1,147 @@
+# simplified-genai
+
+A streamlined, unified Generative AI abstraction layer for Python supporting **Google Gemini**, **OpenAI GPT**, and **xAI Grok**.
+
+## Features
+
+- **Unified Provider Interface (`IGenAiProvider`)**: Switch seamlessly between Gemini, GPT, and Grok without rewriting code.
+- **Structured Outputs**: Direct type-safe deserialization into Pydantic models with schema enforcement.
+- **Python Function Calling / Tool Use (`ToolDefinition`)**: Automatic JSON schema generation from standard Python functions and type hints.
+- **Multimodal File Uploads**: Uniform file uploading and handling across multimodal models.
+- **Decoupled Chat Sessions**: `IChatSessionStore` protocol with a built-in `InMemoryChatSessionStore` for instant local usage or testing.
+- **Provider Factory (`GenAiProviderFactory`)**: Dynamic primary and fallback provider resolution.
+
+---
+
+## Installation
+
+```bash
+pip install simplified-genai
+```
+
+Or using `uv`:
+
+```bash
+uv add simplified-genai
+```
+
+---
+
+## Quickstart
+
+### 1. Basic Text Generation
+
+```python
+import asyncio
+from simplified_genai import GeminiGenAiProvider, GenAiModel
+
+async def main():
+    provider = GeminiGenAiProvider(
+        api_key="YOUR_GEMINI_API_KEY",
+        supported_models=[GenAiModel.GEMINI_2_5_FLASH],
+        default_model=GenAiModel.GEMINI_2_5_FLASH,
+    )
+
+    response = await provider.get_raw_text_response(
+        user_prompt="Explain quantum computing in one sentence."
+    )
+    print(response)
+
+asyncio.run(main())
+```
+
+### 2. Structured Output with Pydantic
+
+```python
+import asyncio
+from pydantic import BaseModel
+from simplified_genai import GptGenAiProvider, GenAiModel
+
+class CapitalCity(BaseModel):
+    country: str
+    capital: str
+    population_millions: float
+
+async def main():
+    provider = GptGenAiProvider(
+        api_key="YOUR_OPENAI_API_KEY",
+        supported_models=[GenAiModel.GPT_5_NANO],
+        default_model=GenAiModel.GPT_5_NANO,
+    )
+
+    result = await provider.get_structured_response(
+        schema=CapitalCity,
+        user_prompt="What is the capital of France?",
+    )
+    print(f"{result.capital}, {result.country} (Pop: {result.population_millions}M)")
+
+asyncio.run(main())
+```
+
+### 3. Tool Calling / Function Calling
+
+```python
+import asyncio
+from simplified_genai import GeminiGenAiProvider, GenAiModel, ToolDefinition
+
+def get_weather(location: str) -> str:
+    """Get the current weather for a given location."""
+    return f"Weather in {location} is 22°C and sunny."
+
+weather_tool = ToolDefinition(
+    function=get_weather,
+    description="Get current weather in a city"
+)
+
+async def main():
+    provider = GeminiGenAiProvider(
+        api_key="YOUR_GEMINI_API_KEY",
+        supported_models=[GenAiModel.GEMINI_2_5_FLASH],
+        default_model=GenAiModel.GEMINI_2_5_FLASH,
+    )
+
+    response = await provider.get_raw_text_response(
+        user_prompt="What's the weather in Tokyo?",
+        tools=[weather_tool],
+    )
+    print(response)
+
+asyncio.run(main())
+```
+
+### 4. Chat Session Management
+
+```python
+import asyncio
+from simplified_genai import (
+    ChatSessionService,
+    InMemoryChatSessionStore,
+    GenAiChatMessage,
+    GenAiChatMessageRole,
+)
+
+async def main():
+    # Use the built-in in-memory store, or implement IChatSessionStore for Redis/Postgres/Mongo
+    store = InMemoryChatSessionStore()
+    chat_service = ChatSessionService(store=store)
+
+    session_id = chat_service.start_session()
+
+    await chat_service.append_turn(
+        session_id=session_id,
+        user_message=GenAiChatMessage(role=GenAiChatMessageRole.USER, content="Hello!"),
+        assistant_message=GenAiChatMessage(role=GenAiChatMessageRole.ASSISTANT, content="Hi there! How can I help?"),
+    )
+
+    history = await chat_service.get_history(session_id)
+    for msg in history:
+        print(f"[{msg.role}]: {msg.content}")
+
+asyncio.run(main())
+```
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
