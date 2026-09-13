@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [
-    { name = "Your Name", email = "your.email@example.com" }
+    { name = "Daniyal", email = "57293258+DaniyalAhmadSE@users.noreply.github.com" }
 ]
 keywords = ["llm", "genai", "gemini", "openai", "grok", "ai", "tools"]
 classifiers = [
