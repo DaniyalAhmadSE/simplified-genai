@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "simplified-genai"
-version = "0.1.0"
+version = "0.1.1"
 description = "A streamlined, multi-provider Generative AI abstraction layer for Gemini, OpenAI GPT, and xAI Grok."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -12,6 +12,9 @@ license = { text = "MIT" }
 authors = [
     { name = "Daniyal", email = "57293258+DaniyalAhmadSE@users.noreply.github.com" }
 ]
+[project.urls]
+Homepage = "https://github.com/DaniyalAhmadSE/simplified-genai"
+
 keywords = ["llm", "genai", "gemini", "openai", "grok", "ai", "tools"]
 classifiers = [
     "Development Status :: 4 - Beta",
