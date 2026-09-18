@@ -112,27 +112,45 @@ asyncio.run(main())
 import asyncio
 from simplified_genai import (
     ChatSessionService,
-    InMemoryChatSessionStore,
+    GeminiGenAiProvider,
     GenAiChatMessage,
     GenAiChatMessageRole,
+    InMemoryChatSessionStore,
 )
 
 async def main():
-    # Use the built-in in-memory store, or implement IChatSessionStore for Redis/Postgres/Mongo
-    store = InMemoryChatSessionStore()
-    chat_service = ChatSessionService(store=store)
-
+    provider = GeminiGenAiProvider(
+        api_key="YOUR_GEMINI_API_KEY",
+        default_model="gemini-2.5-flash",
+    )
+    chat_service = ChatSessionService(store=InMemoryChatSessionStore())
     session_id = chat_service.start_session()
+
+    # First turn
+    user_prompt = "Hello! My name is Alice."
+    history = await chat_service.get_history(session_id)
+
+    response = await provider.get_raw_text_response(
+        user_prompt=user_prompt,
+        messages=history,
+    )
+    print(f"Assistant: {response}")
 
     await chat_service.append_turn(
         session_id=session_id,
-        user_message=GenAiChatMessage(role=GenAiChatMessageRole.USER, content="Hello!"),
-        assistant_message=GenAiChatMessage(role=GenAiChatMessageRole.ASSISTANT, content="Hi there! How can I help?"),
+        user_message=GenAiChatMessage(role=GenAiChatMessageRole.USER, content=user_prompt),
+        assistant_message=GenAiChatMessage(role=GenAiChatMessageRole.ASSISTANT, content=response),
     )
 
+    # Follow-up turn with conversation history
+    follow_up_prompt = "What is my name?"
     history = await chat_service.get_history(session_id)
-    for msg in history:
-        print(f"[{msg.role}]: {msg.content}")
+
+    response = await provider.get_raw_text_response(
+        user_prompt=follow_up_prompt,
+        messages=history,
+    )
+    print(f"Assistant: {response}")
 
 asyncio.run(main())
 ```
