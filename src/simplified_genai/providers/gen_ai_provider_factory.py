@@ -4,7 +4,6 @@ from simplified_genai.interfaces.i_gen_ai_provider import IGenAiProvider
 from simplified_genai.interfaces.i_gen_ai_provider_factory import (
     IGenAiProviderFactory,
 )
-from simplified_genai.models.gen_ai_model import GenAiModel
 
 
 class GenAiProviderFactory(IGenAiProviderFactory):
@@ -23,12 +22,9 @@ class GenAiProviderFactory(IGenAiProviderFactory):
         )
 
         self.__providers_by_type: dict[type[IGenAiProvider], IGenAiProvider] = {}
-        self.__providers_by_model: dict[GenAiModel, IGenAiProvider] = {}
 
         for provider in providers:
             self.__providers_by_type[type(provider)] = provider
-            for model in provider.supported_models:
-                self.__providers_by_model[model] = provider
 
     @override
     def get_gen_ai_provider(

@@ -31,7 +31,6 @@ from simplified_genai.models.gen_ai_chat_message import (
     GenAiChatMessage,
     GenAiChatMessageRole,
 )
-from simplified_genai.models.gen_ai_model import GenAiModel
 from simplified_genai.models.tool_definition import ToolDefinition
 
 
@@ -40,25 +39,19 @@ class GeminiGenAiProvider(IGenAiProvider):
     def __init__(
         self,
         api_key: str,
-        supported_models: list[GenAiModel],
-        default_model: GenAiModel,
+        default_model: str,
     ) -> None:
         self.__llm_client = genai.Client(api_key=api_key)
         self.__default_model = default_model
-        self.__supported_models = supported_models
         self.__default_temperature = 0.2
         self.__default_max_tool_iterations = 10
-
-    @property
-    def supported_models(self) -> list[GenAiModel]:
-        return self.__supported_models
 
     @override
     async def get_raw_text_response(
         self,
         *,
         user_prompt: str | None,
-        model: GenAiModel | None = None,
+        model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
         files: list[FileDto] = [],
@@ -162,7 +155,7 @@ class GeminiGenAiProvider(IGenAiProvider):
         *,
         schema: type[T],
         user_prompt: str | None,
-        model: GenAiModel | None = None,
+        model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
         files: list[FileDto] = [],
@@ -367,7 +360,7 @@ class GeminiGenAiProvider(IGenAiProvider):
 
     async def __run_tool_loop(
         self,
-        model: GenAiModel,
+        model: str,
         contents: list[Any],
         config: GenerateContentConfig,
         tool_dispatch: dict[str, ToolDefinition],

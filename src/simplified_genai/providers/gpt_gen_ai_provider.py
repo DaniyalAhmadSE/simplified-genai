@@ -16,7 +16,6 @@ from simplified_genai.models.base_file_upload_result_dto import (
 )
 from simplified_genai.models.file_dto import FileDto
 from simplified_genai.models.gen_ai_chat_message import GenAiChatMessage
-from simplified_genai.models.gen_ai_model import GenAiModel
 from simplified_genai.models.gpt_upload_result_dto import GptUploadResultDto
 from simplified_genai.models.tool_definition import ToolDefinition
 
@@ -25,25 +24,19 @@ class GptGenAiProvider(IGenAiProvider):
     def __init__(
         self,
         api_key: str,
-        supported_models: list[GenAiModel],
-        default_model: GenAiModel,
+        default_model: str,
     ) -> None:
         self.__llm_client = AsyncOpenAI(api_key=api_key)
         self.__default_model = default_model
-        self.__supported_models = supported_models
         self.__default_temperature = 0.2
         self.__default_max_tool_iterations = 5
-
-    @property
-    def supported_models(self) -> list[GenAiModel]:
-        return self.__supported_models
 
     @override
     async def get_raw_text_response(
         self,
         *,
         user_prompt: str | None,
-        model: GenAiModel | None = None,
+        model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
         files: list[FileDto] = [],
@@ -167,7 +160,7 @@ class GptGenAiProvider(IGenAiProvider):
         *,
         schema: type[T],
         user_prompt: str | None,
-        model: GenAiModel | None = None,
+        model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
         files: list[FileDto] = [],
@@ -409,17 +402,16 @@ class GptGenAiProvider(IGenAiProvider):
         sanitized_name = re.sub(r"[^a-zA-Z0-9_-]", "_", schema.__name__)[:64]
         return type(sanitized_name, (schema,), {})
 
-    def __check_if_supports_temperature(self, default_model: GenAiModel):
-        return default_model in [GenAiModel.GPT_5_NANO, GenAiModel.GPT_5_4_NANO]
-
-    def __get_validated_model(self, model: GenAiModel | None) -> GenAiModel:
-        if not model:
-            return self.__default_model
-
-        if model in self.supported_models:
-            return model
-
-        logger.warning(
-            f"Model '{model}' not found in supported models list, using default model."
+    def __check_if_supports_temperature(self, model: str) -> bool:
+        unsupported_prefixes = (
+            "o1",
+            "o3",
+            "o4",
+            "gpt-5.5",
+            "gpt-5-pro",
+            "gpt-5-reasoning",
         )
-        return self.__default_model
+        return not any(model.startswith(prefix) for prefix in unsupported_prefixes)
+
+    def __get_validated_model(self, model: str | None) -> str:
+        return model if model else self.__default_model

@@ -33,13 +33,12 @@ uv add simplified-genai
 
 ```python
 import asyncio
-from simplified_genai import GeminiGenAiProvider, GenAiModel
+from simplified_genai import GeminiGenAiProvider
 
 async def main():
     provider = GeminiGenAiProvider(
         api_key="YOUR_GEMINI_API_KEY",
-        supported_models=[GenAiModel.GEMINI_2_5_FLASH],
-        default_model=GenAiModel.GEMINI_2_5_FLASH,
+        default_model="gemini-2.5-flash",
     )
 
     response = await provider.get_raw_text_response(
@@ -55,7 +54,7 @@ asyncio.run(main())
 ```python
 import asyncio
 from pydantic import BaseModel
-from simplified_genai import GptGenAiProvider, GenAiModel
+from simplified_genai import GptGenAiProvider
 
 class CapitalCity(BaseModel):
     country: str
@@ -65,8 +64,7 @@ class CapitalCity(BaseModel):
 async def main():
     provider = GptGenAiProvider(
         api_key="YOUR_OPENAI_API_KEY",
-        supported_models=[GenAiModel.GPT_5_NANO],
-        default_model=GenAiModel.GPT_5_NANO,
+        default_model="gpt-5-nano",
     )
 
     result = await provider.get_structured_response(
@@ -82,7 +80,7 @@ asyncio.run(main())
 
 ```python
 import asyncio
-from simplified_genai import GeminiGenAiProvider, GenAiModel, ToolDefinition
+from simplified_genai import GeminiGenAiProvider, ToolDefinition
 
 def get_weather(location: str) -> str:
     """Get the current weather for a given location."""
@@ -96,8 +94,7 @@ weather_tool = ToolDefinition(
 async def main():
     provider = GeminiGenAiProvider(
         api_key="YOUR_GEMINI_API_KEY",
-        supported_models=[GenAiModel.GEMINI_2_5_FLASH],
-        default_model=GenAiModel.GEMINI_2_5_FLASH,
+        default_model="gemini-2.5-flash",
     )
 
     response = await provider.get_raw_text_response(

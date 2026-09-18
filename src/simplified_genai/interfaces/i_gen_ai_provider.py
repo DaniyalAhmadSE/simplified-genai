@@ -7,20 +7,16 @@ from simplified_genai.models.base_file_upload_result_dto import (
 )
 from simplified_genai.models.file_dto import FileDto
 from simplified_genai.models.gen_ai_chat_message import GenAiChatMessage
-from simplified_genai.models.gen_ai_model import GenAiModel
 from simplified_genai.models.tool_choice import ToolChoice
 from simplified_genai.models.tool_definition import ToolDefinition
 
 
 class IGenAiProvider(Protocol):
-    @property
-    def supported_models(self) -> list[GenAiModel]: ...
-
     async def get_raw_text_response(
         self,
         *,
         user_prompt: str | None,
-        model: GenAiModel | None = None,
+        model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
         files: list[FileDto] = [],
@@ -38,7 +34,7 @@ class IGenAiProvider(Protocol):
         *,
         schema: type[T],
         user_prompt: str | None,
-        model: GenAiModel | None = None,
+        model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
         files: list[FileDto] = [],
