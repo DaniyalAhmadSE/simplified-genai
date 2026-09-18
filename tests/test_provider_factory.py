@@ -6,7 +6,6 @@ import pytest
 from simplified_genai import (
     BaseFileUploadResultDto,
     FileDto,
-    GenAiModel,
     GenAiProviderFactory,
     IGenAiProvider,
     ToolChoice,
@@ -15,10 +14,6 @@ from simplified_genai import (
 
 
 class MockGeminiProvider(IGenAiProvider):
-    @property
-    def supported_models(self) -> list[GenAiModel]:
-        return [GenAiModel.GEMINI_2_5_FLASH]
-
     async def get_raw_text_response(self, **kwargs: Any) -> str:
         return "gemini raw"
 
@@ -27,7 +22,7 @@ class MockGeminiProvider(IGenAiProvider):
         *,
         schema: type[T],
         user_prompt: str | None,
-        model: GenAiModel | None = None,
+        model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
         files: list[FileDto] = [],
@@ -50,10 +45,6 @@ class MockGeminiProvider(IGenAiProvider):
 
 
 class MockGptProvider(IGenAiProvider):
-    @property
-    def supported_models(self) -> list[GenAiModel]:
-        return [GenAiModel.GPT_5_NANO]
-
     async def get_raw_text_response(self, **kwargs: Any) -> str:
         return "gpt raw"
 
@@ -62,7 +53,7 @@ class MockGptProvider(IGenAiProvider):
         *,
         schema: type[T],
         user_prompt: str | None,
-        model: GenAiModel | None = None,
+        model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
         files: list[FileDto] = [],

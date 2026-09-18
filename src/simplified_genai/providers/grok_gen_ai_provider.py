@@ -21,7 +21,6 @@ from simplified_genai.models.gen_ai_chat_message import (
     GenAiChatMessage,
     GenAiChatMessageRole,
 )
-from simplified_genai.models.gen_ai_model import GenAiModel
 from simplified_genai.models.grok_upload_result_dto import GrokUploadResultDto
 from simplified_genai.models.file_dto import FileDto
 from simplified_genai.interfaces.i_gen_ai_provider import IGenAiProvider
@@ -43,25 +42,19 @@ class GrokGenAiProvider(IGenAiProvider):
         self,
         *,
         api_key: str,
-        supported_models: list[GenAiModel],
-        default_model: GenAiModel,
+        default_model: str,
     ) -> None:
         self.__llm_client = AsyncClient(api_key=api_key)
         self.__default_model = default_model
-        self.__supported_models = supported_models
         self.__default_temperature = 0.2
         self.__default_max_tool_iterations = 5
-
-    @property
-    def supported_models(self) -> list[GenAiModel]:
-        return self.__supported_models
 
     @override
     async def get_raw_text_response(
         self,
         *,
         user_prompt: str | None,
-        model: GenAiModel | None = None,
+        model: str | None = None,
         system_prompt: Optional[str] = None,
         temperature: float | None = None,
         files: list[FileDto] = [],
@@ -168,7 +161,7 @@ class GrokGenAiProvider(IGenAiProvider):
         *,
         schema: type[T],
         user_prompt: str | None,
-        model: GenAiModel | None = None,
+        model: str | None = None,
         system_prompt: Optional[str] = None,
         temperature: float | None = None,
         files: list[FileDto] = [],
@@ -310,7 +303,7 @@ class GrokGenAiProvider(IGenAiProvider):
         self,
         system_prompt: str | None,
         temperature: float | None,
-        model: GenAiModel | None,
+        model: str | None,
         tools: Iterable[ToolDefinition] = [],
         messages: Iterable[GenAiChatMessage] = [],
         tool_choice: ToolChoice = ToolChoice.AUTO,

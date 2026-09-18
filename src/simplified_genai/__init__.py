@@ -13,7 +13,6 @@ from simplified_genai.models.gen_ai_chat_message import (
     GenAiChatMessage,
     GenAiChatMessageRole,
 )
-from simplified_genai.models.gen_ai_model import GenAiModel
 from simplified_genai.models.gpt_upload_result_dto import GptUploadResultDto
 from simplified_genai.models.grok_upload_result_dto import GrokUploadResultDto
 from simplified_genai.models.tool_choice import ToolChoice
@@ -30,7 +29,6 @@ from simplified_genai.stores.in_memory_chat_session_store import (
     InMemoryChatSessionStore,
 )
 
-
 __all__ = [
     "BaseFileUploadResultDto",
     "ChatSession",
@@ -41,7 +39,6 @@ __all__ = [
     "GeminiUploadResultDto",
     "GenAiChatMessage",
     "GenAiChatMessageRole",
-    "GenAiModel",
     "GenAiOverloadedError",
     "GenAiProviderFactory",
     "GptGenAiProvider",
