@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
 
-class FileDto(BaseModel):
+class FilePayload(BaseModel):
     file_binary: bytes
     mime_type: str
 
