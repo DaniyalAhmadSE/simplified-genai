@@ -14,15 +14,15 @@ from xai_sdk.chat import tool_result as xai_tool_result  # type: ignore
 from xai_sdk.types import Content  # type: ignore
 from xai_sdk.aio.chat import Chat  # type: ignore
 from simplified_genai.exceptions.gen_ai_overloaded_error import GenAiOverloadedError
-from simplified_genai.models.base_file_upload_result_dto import (
-    BaseFileUploadResultDto,
+from simplified_genai.models.file_upload_response import (
+    FileUploadResponse,
 )
 from simplified_genai.models.gen_ai_chat_message import (
     GenAiChatMessage,
     GenAiChatMessageRole,
 )
 from simplified_genai.models.grok_upload_result_dto import GrokUploadResultDto
-from simplified_genai.models.file_dto import FileDto
+from simplified_genai.models.file_payload import FilePayload
 from simplified_genai.interfaces.i_gen_ai_provider import IGenAiProvider
 from simplified_genai.models.tool_choice import ToolChoice
 from simplified_genai.models.tool_definition import ToolDefinition
@@ -57,8 +57,8 @@ class GrokGenAiProvider(IGenAiProvider):
         model: str | None = None,
         system_prompt: Optional[str] = None,
         temperature: float | None = None,
-        files: list[FileDto] = [],
-        existing_file_upload_results: list[BaseFileUploadResultDto] = [],
+        files: list[FilePayload] = [],
+        existing_file_upload_results: list[FileUploadResponse] = [],
         auto_delete_files: bool = True,
         thinking_config: Any | None = None,
         tools: Iterable[ToolDefinition] = [],
@@ -164,8 +164,8 @@ class GrokGenAiProvider(IGenAiProvider):
         model: str | None = None,
         system_prompt: Optional[str] = None,
         temperature: float | None = None,
-        files: list[FileDto] = [],
-        existing_file_upload_results: list[BaseFileUploadResultDto] = [],
+        files: list[FilePayload] = [],
+        existing_file_upload_results: list[FileUploadResponse] = [],
         auto_delete_files: bool = True,
         thinking_config: Any | None = None,
         tools: Iterable[ToolDefinition] = [],
@@ -332,7 +332,7 @@ class GrokGenAiProvider(IGenAiProvider):
         self,
         chat: Chat,
         user_prompt: str | None,
-        files: list[FileDto],
+        files: list[FilePayload],
         uploaded_file_ids: list[GrokUploadResultDto],
     ) -> None:
         """
@@ -361,7 +361,7 @@ class GrokGenAiProvider(IGenAiProvider):
         chat.append(user(*parts))
 
     @override
-    async def upload_file(self, file: FileDto) -> GrokUploadResultDto:
+    async def upload_file(self, file: FilePayload) -> GrokUploadResultDto:
         file_upload_result: GrokUploadResultDto | None = None
         try:
             # Derive a sensible filename so the API can detect the format.
@@ -395,7 +395,7 @@ class GrokGenAiProvider(IGenAiProvider):
 
     @override
     async def delete_uploaded_files(
-        self, file_upload_results: Iterable[BaseFileUploadResultDto]
+        self, file_upload_results: Iterable[FileUploadResponse]
     ) -> None:
         for result in file_upload_results:
             if not isinstance(result, GrokUploadResultDto):
@@ -406,7 +406,9 @@ class GrokGenAiProvider(IGenAiProvider):
                 # Log but do not re-raise — deletion failures are non-fatal.
                 logger.warning(f"Failed to delete uploaded file {result}: {e}")
 
-    async def __upload_files(self, files: list[FileDto]) -> list[GrokUploadResultDto]:
+    async def __upload_files(
+        self, files: list[FilePayload]
+    ) -> list[GrokUploadResultDto]:
         return [
             await self.upload_file(file)
             for file in files
@@ -415,8 +417,8 @@ class GrokGenAiProvider(IGenAiProvider):
 
     async def __get_uploaded_file_results(
         self,
-        files: list[FileDto],
-        existing_file_upload_results: list[BaseFileUploadResultDto],
+        files: list[FilePayload],
+        existing_file_upload_results: list[FileUploadResponse],
     ) -> list[GrokUploadResultDto]:
         file_upload_results = [
             upload_result for upload_result in (await self.__upload_files(files))

@@ -4,7 +4,7 @@ from typing import Protocol
 from simplified_genai.models.gen_ai_chat_message import GenAiChatMessage
 
 
-class IChatSessionStore(Protocol):
+class IChatSessionStorageProvider(Protocol):
     """Protocol for storing and retrieving chat session conversation history."""
 
     async def get_history(self, session_id: str) -> Sequence[GenAiChatMessage]:

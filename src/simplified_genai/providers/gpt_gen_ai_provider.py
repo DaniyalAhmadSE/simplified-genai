@@ -11,10 +11,10 @@ from simplified_genai.interfaces.i_gen_ai_provider import (
     IGenAiProvider,
     ToolChoice,
 )
-from simplified_genai.models.base_file_upload_result_dto import (
-    BaseFileUploadResultDto,
+from simplified_genai.models.file_upload_response import (
+    FileUploadResponse,
 )
-from simplified_genai.models.file_dto import FileDto
+from simplified_genai.models.file_payload import FilePayload
 from simplified_genai.models.gen_ai_chat_message import GenAiChatMessage
 from simplified_genai.models.gpt_upload_result_dto import GptUploadResultDto
 from simplified_genai.models.tool_definition import ToolDefinition
@@ -39,8 +39,8 @@ class GptGenAiProvider(IGenAiProvider):
         model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
-        files: list[FileDto] = [],
-        existing_file_upload_results: list[BaseFileUploadResultDto] = [],
+        files: list[FilePayload] = [],
+        existing_file_upload_results: list[FileUploadResponse] = [],
         auto_delete_files: bool = True,
         thinking_config: Any | None = None,
         tools: Iterable[ToolDefinition] = [],
@@ -163,8 +163,8 @@ class GptGenAiProvider(IGenAiProvider):
         model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
-        files: list[FileDto] = [],
-        existing_file_upload_results: list[BaseFileUploadResultDto] = [],
+        files: list[FilePayload] = [],
+        existing_file_upload_results: list[FileUploadResponse] = [],
         auto_delete_files: bool = True,
         thinking_config: Any | None = None,
         tools: Iterable[ToolDefinition] = [],
@@ -279,7 +279,7 @@ class GptGenAiProvider(IGenAiProvider):
                 await self.delete_uploaded_files(existing_file_upload_results)
 
     @override
-    async def upload_file(self, file: FileDto) -> GptUploadResultDto:
+    async def upload_file(self, file: FilePayload) -> GptUploadResultDto:
         extension = mimetypes.guess_extension(file.mime_type) or ".bin"
         file_name = f"upload{extension}"
 
@@ -300,7 +300,7 @@ class GptGenAiProvider(IGenAiProvider):
 
     @override
     async def delete_uploaded_files(
-        self, file_upload_results: Iterable[BaseFileUploadResultDto]
+        self, file_upload_results: Iterable[FileUploadResponse]
     ) -> None:
         for result in file_upload_results:
             if isinstance(result, GptUploadResultDto):
@@ -314,7 +314,7 @@ class GptGenAiProvider(IGenAiProvider):
                     except Exception as e:
                         logger.error(f"Failed to delete file {file_id}: {e}")
 
-    def __get_purpose(self, file: FileDto):
+    def __get_purpose(self, file: FilePayload):
         if self.__is_image(file.mime_type):
             logger.info("Image detected, setting purpose to image.")
             return "vision"
@@ -342,8 +342,8 @@ class GptGenAiProvider(IGenAiProvider):
         self,
         user_prompt: str | None,
         system_prompt: str | None,
-        files: list[FileDto],
-        file_upload_results: list[BaseFileUploadResultDto],
+        files: list[FilePayload],
+        file_upload_results: list[FileUploadResponse],
         messages: Iterable[GenAiChatMessage] = [],
     ) -> list[dict[str, Any]]:
         input_items: list[dict[str, Any]] = []
@@ -375,13 +375,15 @@ class GptGenAiProvider(IGenAiProvider):
 
         return input_items
 
-    async def __upload_files(self, files: list[FileDto]) -> list[GptUploadResultDto]:
+    async def __upload_files(
+        self, files: list[FilePayload]
+    ) -> list[GptUploadResultDto]:
         return [await self.upload_file(file) for file in files]
 
     async def __get_uploaded_file_payloads(
         self,
-        files: list[FileDto],
-        file_upload_results: list[BaseFileUploadResultDto],
+        files: list[FilePayload],
+        file_upload_results: list[FileUploadResponse],
     ) -> list[dict[str, Any]]:
         uploaded_file_payloads = [
             upload_result.file_payload

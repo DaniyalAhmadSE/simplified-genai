@@ -4,8 +4,8 @@ from pydantic import BaseModel
 import pytest
 
 from simplified_genai import (
-    BaseFileUploadResultDto,
-    FileDto,
+    FileUploadResponse,
+    FilePayload,
     GenAiProviderFactory,
     IGenAiProvider,
     ToolChoice,
@@ -25,8 +25,8 @@ class MockGeminiProvider(IGenAiProvider):
         model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
-        files: list[FileDto] = [],
-        existing_file_upload_results: list[BaseFileUploadResultDto] = [],
+        files: list[FilePayload] = [],
+        existing_file_upload_results: list[FileUploadResponse] = [],
         auto_delete_files: bool = True,
         thinking_config: Any | None = None,
         tools: Iterable[ToolDefinition] = [],
@@ -35,11 +35,11 @@ class MockGeminiProvider(IGenAiProvider):
     ) -> T:
         raise NotImplementedError
 
-    async def upload_file(self, file: FileDto) -> BaseFileUploadResultDto:
+    async def upload_file(self, file: FilePayload) -> FileUploadResponse:
         raise NotImplementedError
 
     async def delete_uploaded_files(
-        self, file_upload_results: Iterable[BaseFileUploadResultDto]
+        self, file_upload_results: Iterable[FileUploadResponse]
     ) -> None:
         pass
 
@@ -56,8 +56,8 @@ class MockGptProvider(IGenAiProvider):
         model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
-        files: list[FileDto] = [],
-        existing_file_upload_results: list[BaseFileUploadResultDto] = [],
+        files: list[FilePayload] = [],
+        existing_file_upload_results: list[FileUploadResponse] = [],
         auto_delete_files: bool = True,
         thinking_config: Any | None = None,
         tools: Iterable[ToolDefinition] = [],
@@ -66,11 +66,11 @@ class MockGptProvider(IGenAiProvider):
     ) -> T:
         raise NotImplementedError
 
-    async def upload_file(self, file: FileDto) -> BaseFileUploadResultDto:
+    async def upload_file(self, file: FilePayload) -> FileUploadResponse:
         raise NotImplementedError
 
     async def delete_uploaded_files(
-        self, file_upload_results: Iterable[BaseFileUploadResultDto]
+        self, file_upload_results: Iterable[FileUploadResponse]
     ) -> None:
         pass
 

@@ -2,14 +2,23 @@
 
 A streamlined, unified Generative AI abstraction layer for Python supporting **Google Gemini**, **OpenAI GPT**, and **xAI Grok**.
 
+Built with modern Python (3.12+) features, strict type safety, open-ended model selection, and zero boilerplate.
+
 ## Features
 
-- **Unified Provider Interface (`IGenAiProvider`)**: Switch seamlessly between Gemini, GPT, and Grok without rewriting code.
+- **Unified Provider Interface (`IGenAiProvider`)**: Switch seamlessly between Gemini, GPT, and Grok without rewriting application logic.
+- **Open-Ended Model Selection**: Use any supported or custom model ID as a string (`"gemini-2.5-flash"`, `"gpt-4o"`, `"grok-4-1-fast-reasoning"`).
 - **Structured Outputs**: Direct type-safe deserialization into Pydantic models with schema enforcement.
-- **Python Function Calling / Tool Use (`ToolDefinition`)**: Automatic JSON schema generation from standard Python functions and type hints.
-- **Multimodal File Uploads**: Uniform file uploading and handling across multimodal models.
-- **Decoupled Chat Sessions**: `IChatSessionStore` protocol with a built-in `InMemoryChatSessionStore` for instant local usage or testing.
-- **Provider Factory (`GenAiProviderFactory`)**: Dynamic primary and fallback provider resolution.
+- **Function / Tool Calling (`ToolDefinition`, `ToolChoice`)**: Automatic JSON schema generation from standard Python functions and type annotations.
+- **Multimodal Inputs & File Attachments (`FilePayload`, `FileUploadResponse`)**: Uniform file handling, uploading, and automatic remote cleanup across multimodal models.
+- **Decoupled Chat Sessions**: `IChatSessionStorageProvider` protocol with a built-in `InMemoryChatSessionStorageProvider` for testing, local scripts, or production extensions (Redis, Postgres, Mongo).
+- **Dynamic Provider Factory (`GenAiProviderFactory`)**: Dynamic resolution of primary and fallback providers for high availability.
+
+---
+
+## Requirements
+
+- **Python 3.12+** (leverages PEP 695 type parameter syntax)
 
 ---
 
@@ -49,6 +58,8 @@ async def main():
 asyncio.run(main())
 ```
 
+---
+
 ### 2. Structured Output with Pydantic
 
 ```python
@@ -76,11 +87,13 @@ async def main():
 asyncio.run(main())
 ```
 
+---
+
 ### 3. Tool Calling / Function Calling
 
 ```python
 import asyncio
-from simplified_genai import GeminiGenAiProvider, ToolDefinition
+from simplified_genai import GeminiGenAiProvider, ToolChoice, ToolDefinition
 
 def get_weather(location: str) -> str:
     """Get the current weather for a given location."""
@@ -88,7 +101,7 @@ def get_weather(location: str) -> str:
 
 weather_tool = ToolDefinition(
     function=get_weather,
-    description="Get current weather in a city"
+    description="Get current weather in a city",
 )
 
 async def main():
@@ -100,13 +113,51 @@ async def main():
     response = await provider.get_raw_text_response(
         user_prompt="What's the weather in Tokyo?",
         tools=[weather_tool],
+        tool_choice=ToolChoice.AUTO,
     )
     print(response)
 
 asyncio.run(main())
 ```
 
-### 4. Chat Session Management
+---
+
+### 4. Multimodal Inputs & File Attachments
+
+Attach binary files (images, audio, PDFs, documents) using `FilePayload`:
+
+```python
+import asyncio
+from pathlib import Path
+from simplified_genai import GeminiGenAiProvider, FilePayload
+
+async def main():
+    provider = GeminiGenAiProvider(
+        api_key="YOUR_GEMINI_API_KEY",
+        default_model="gemini-2.5-flash",
+    )
+
+    image_bytes = Path("sample.png").read_bytes()
+    image_payload = FilePayload(
+        file_binary=image_bytes,
+        mime_type="image/png",
+    )
+
+    response = await provider.get_raw_text_response(
+        user_prompt="Describe what you see in this image.",
+        files=[image_payload],
+        auto_delete_files=True,  # Automatically cleans up remote uploaded files after completion
+    )
+    print(response)
+
+asyncio.run(main())
+```
+
+---
+
+### 5. Chat Session Management
+
+Manage multi-turn conversation history with automatic turn tracking:
 
 ```python
 import asyncio
@@ -115,7 +166,7 @@ from simplified_genai import (
     GeminiGenAiProvider,
     GenAiChatMessage,
     GenAiChatMessageRole,
-    InMemoryChatSessionStore,
+    InMemoryChatSessionStorageProvider,
 )
 
 async def main():
@@ -123,7 +174,8 @@ async def main():
         api_key="YOUR_GEMINI_API_KEY",
         default_model="gemini-2.5-flash",
     )
-    chat_service = ChatSessionService(store=InMemoryChatSessionStore())
+    # Use built-in in-memory storage or implement IChatSessionStorageProvider for Redis/Postgres
+    chat_service = ChatSessionService(store=InMemoryChatSessionStorageProvider())
     session_id = chat_service.start_session()
 
     # First turn
@@ -157,6 +209,55 @@ asyncio.run(main())
 
 ---
 
+### 6. Provider Factory & Fallback Routing
+
+Configure primary and fallback providers for resilience:
+
+```python
+from simplified_genai import (
+    GeminiGenAiProvider,
+    GrokGenAiProvider,
+    GenAiProviderFactory,
+)
+
+gemini = GeminiGenAiProvider(
+    api_key="YOUR_GEMINI_API_KEY",
+    default_model="gemini-2.5-flash",
+)
+
+grok = GrokGenAiProvider(
+    api_key="YOUR_XAI_API_KEY",
+    default_model="grok-4-1-fast-reasoning",
+)
+
+factory = GenAiProviderFactory(
+    providers=[gemini, grok],
+    default_primary_gen_ai_provider_type=GeminiGenAiProvider,
+    default_fallback_gen_ai_provider_type=GrokGenAiProvider,
+)
+
+# Retrieve default primary provider
+primary = factory.get_primary_gen_ai_provider()
+
+# Retrieve provider by specific type
+grok_provider = factory.get_gen_ai_provider(GrokGenAiProvider)
+```
+
+---
+
+## Supported Providers & Models
+
+Model selection is open-ended. You can pass any standard model ID string supported by the underlying provider:
+
+| Provider Class | Underlying SDK | Common Models (`default_model` / `model`) |
+| :--- | :--- | :--- |
+| `GeminiGenAiProvider` | `google-genai` | `"gemini-2.5-flash"`, `"gemini-3.5-flash"`, `"gemini-3.7-flash"` |
+| `GptGenAiProvider` | `openai` | `"gpt-4o"`, `"gpt-4o-mini"`, `"gpt-5-nano"`, `"gpt-5.5"` |
+| `GrokGenAiProvider` | `xai-sdk` | `"grok-4-1-fast-reasoning"` |
+
+---
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
