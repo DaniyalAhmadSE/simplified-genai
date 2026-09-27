@@ -2,7 +2,7 @@ import pytest
 
 from simplified_genai import (
     ChatSessionService,
-    InMemoryChatSessionStore,
+    InMemoryChatSessionStorageProvider,
     GenAiChatMessage,
     GenAiChatMessageRole,
 )
@@ -10,7 +10,7 @@ from simplified_genai import (
 
 @pytest.fixture
 def chat_service() -> ChatSessionService:
-    store = InMemoryChatSessionStore()
+    store = InMemoryChatSessionStorageProvider()
     return ChatSessionService(store=store)
 
 

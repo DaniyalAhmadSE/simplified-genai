@@ -1,11 +1,13 @@
 from collections.abc import Sequence
 from typing import override
 
-from simplified_genai.interfaces.i_chat_session_store import IChatSessionStore
+from simplified_genai.interfaces.i_chat_session_storage_provider import (
+    IChatSessionStorageProvider,
+)
 from simplified_genai.models.gen_ai_chat_message import GenAiChatMessage
 
 
-class InMemoryChatSessionStore(IChatSessionStore):
+class InMemoryChatSessionStorageProvider(IChatSessionStorageProvider):
     """In-memory implementation of IChatSessionStore.
 
     Stores conversation history in an internal dictionary.

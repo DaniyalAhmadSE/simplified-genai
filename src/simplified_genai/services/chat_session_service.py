@@ -5,14 +5,16 @@ import uuid
 from simplified_genai.interfaces.i_chat_session_service import (
     IChatSessionService,
 )
-from simplified_genai.interfaces.i_chat_session_store import IChatSessionStore
+from simplified_genai.interfaces.i_chat_session_storage_provider import (
+    IChatSessionStorageProvider,
+)
 from simplified_genai.models.gen_ai_chat_message import GenAiChatMessage
 
 
 class ChatSessionService(IChatSessionService):
     """Service managing per-session conversation history via an IChatSessionStore."""
 
-    def __init__(self, store: IChatSessionStore) -> None:
+    def __init__(self, store: IChatSessionStorageProvider) -> None:
         self.__store = store
 
     @override

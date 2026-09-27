@@ -20,10 +20,10 @@ from simplified_genai.interfaces.i_gen_ai_provider import (
     IGenAiProvider,
     ToolChoice,
 )
-from simplified_genai.models.base_file_upload_result_dto import (
-    BaseFileUploadResultDto,
+from simplified_genai.models.file_upload_response import (
+    FileUploadResponse,
 )
-from simplified_genai.models.file_dto import FileDto
+from simplified_genai.models.file_payload import FilePayload
 from simplified_genai.models.gemini_upload_result_dto import (
     GeminiUploadResultDto,
 )
@@ -54,8 +54,8 @@ class GeminiGenAiProvider(IGenAiProvider):
         model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
-        files: list[FileDto] = [],
-        existing_file_upload_results: list[BaseFileUploadResultDto] = [],
+        files: list[FilePayload] = [],
+        existing_file_upload_results: list[FileUploadResponse] = [],
         auto_delete_files: bool = True,
         thinking_config: Any | None = None,
         tools: Iterable[ToolDefinition] = [],
@@ -158,8 +158,8 @@ class GeminiGenAiProvider(IGenAiProvider):
         model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
-        files: list[FileDto] = [],
-        existing_file_upload_results: list[BaseFileUploadResultDto] = [],
+        files: list[FilePayload] = [],
+        existing_file_upload_results: list[FileUploadResponse] = [],
         auto_delete_files: bool = True,
         thinking_config: Any | None = None,
         tools: Iterable[ToolDefinition] = [],
@@ -270,7 +270,7 @@ class GeminiGenAiProvider(IGenAiProvider):
                 await self.delete_uploaded_files(file_upload_results)
 
     @override
-    async def upload_file(self, file: FileDto) -> GeminiUploadResultDto:
+    async def upload_file(self, file: FilePayload) -> GeminiUploadResultDto:
         uploaded_file: types.File | None = None
         try:
             uploaded_file = await self.__llm_client.aio.files.upload(
@@ -288,7 +288,7 @@ class GeminiGenAiProvider(IGenAiProvider):
 
     @override
     async def delete_uploaded_files(
-        self, file_upload_results: Iterable[BaseFileUploadResultDto]
+        self, file_upload_results: Iterable[FileUploadResponse]
     ) -> None:
         for result in file_upload_results:
             if not isinstance(result, GeminiUploadResultDto):
@@ -411,8 +411,8 @@ class GeminiGenAiProvider(IGenAiProvider):
 
     async def __get_uploaded_files(
         self,
-        files: list[FileDto],
-        existing_file_upload_results: list[BaseFileUploadResultDto],
+        files: list[FilePayload],
+        existing_file_upload_results: list[FileUploadResponse],
     ) -> list[GeminiUploadResultDto]:
         file_upload_results = [
             upload_result for upload_result in (await self.__upload_files(files))
@@ -425,7 +425,9 @@ class GeminiGenAiProvider(IGenAiProvider):
 
         return file_upload_results
 
-    async def __upload_files(self, files: list[FileDto]) -> list[GeminiUploadResultDto]:
+    async def __upload_files(
+        self, files: list[FilePayload]
+    ) -> list[GeminiUploadResultDto]:
         return [await self.upload_file(file) for file in files]
 
     def __get_contents(

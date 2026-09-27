@@ -2,10 +2,10 @@ from typing import Any, Iterable, Protocol
 
 from pydantic import BaseModel
 
-from simplified_genai.models.base_file_upload_result_dto import (
-    BaseFileUploadResultDto,
+from simplified_genai.models.file_upload_response import (
+    FileUploadResponse,
 )
-from simplified_genai.models.file_dto import FileDto
+from simplified_genai.models.file_payload import FilePayload
 from simplified_genai.models.gen_ai_chat_message import GenAiChatMessage
 from simplified_genai.models.tool_choice import ToolChoice
 from simplified_genai.models.tool_definition import ToolDefinition
@@ -19,8 +19,8 @@ class IGenAiProvider(Protocol):
         model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
-        files: list[FileDto] = [],
-        existing_file_upload_results: list[BaseFileUploadResultDto] = [],
+        files: list[FilePayload] = [],
+        existing_file_upload_results: list[FileUploadResponse] = [],
         auto_delete_files: bool = True,
         thinking_config: Any | None = None,
         tools: Iterable[ToolDefinition] = [],
@@ -37,8 +37,8 @@ class IGenAiProvider(Protocol):
         model: str | None = None,
         system_prompt: str | None = None,
         temperature: float | None = None,
-        files: list[FileDto] = [],
-        existing_file_upload_results: list[BaseFileUploadResultDto] = [],
+        files: list[FilePayload] = [],
+        existing_file_upload_results: list[FileUploadResponse] = [],
         auto_delete_files: bool = True,
         thinking_config: Any | None = None,
         tools: Iterable[ToolDefinition] = [],
@@ -46,8 +46,8 @@ class IGenAiProvider(Protocol):
         tool_choice: ToolChoice = ToolChoice.AUTO,
     ) -> T: ...
 
-    async def upload_file(self, file: FileDto) -> BaseFileUploadResultDto: ...
+    async def upload_file(self, file: FilePayload) -> FileUploadResponse: ...
 
     async def delete_uploaded_files(
-        self, file_upload_results: Iterable[BaseFileUploadResultDto]
+        self, file_upload_results: Iterable[FileUploadResponse]
     ) -> None: ...
