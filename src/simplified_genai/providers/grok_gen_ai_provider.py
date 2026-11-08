@@ -1,7 +1,7 @@
 import base64
 import json
 import mimetypes
-from typing import Any, Optional, Iterable, override
+from typing import Any, Iterable, override
 from uuid import uuid4
 
 import grpc.aio
@@ -43,10 +43,14 @@ class GrokGenAiProvider(IGenAiProvider):
         *,
         api_key: str,
         default_model: str,
+        api_host: str | None = None,
     ) -> None:
-        self.__llm_client = AsyncClient(api_key=api_key)
+        self.__llm_client = (
+            AsyncClient(api_key=api_key, api_host=api_host)
+            if api_host
+            else AsyncClient(api_key=api_key)
+        )
         self.__default_model = default_model
-        self.__default_temperature = 0.2
         self.__default_max_tool_iterations = 5
 
     @override
@@ -55,7 +59,7 @@ class GrokGenAiProvider(IGenAiProvider):
         *,
         user_prompt: str | None,
         model: str | None = None,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         temperature: float | None = None,
         files: list[FilePayload] = [],
         existing_file_upload_results: list[FileUploadResponse] = [],
@@ -162,7 +166,7 @@ class GrokGenAiProvider(IGenAiProvider):
         schema: type[T],
         user_prompt: str | None,
         model: str | None = None,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         temperature: float | None = None,
         files: list[FilePayload] = [],
         existing_file_upload_results: list[FileUploadResponse] = [],
@@ -318,10 +322,9 @@ class GrokGenAiProvider(IGenAiProvider):
         settings: dict[str, Any] = {
             "model": model if model else self.__default_model,
             "messages": chat_messages,
-            "temperature": (
-                temperature if temperature is not None else self.__default_temperature
-            ),
         }
+        if temperature is not None:
+            settings["temperature"] = temperature
         xai_tools: list[Any] = self.__convert_to_xai_tools(tools) if tools else []
         if xai_tools:
             settings["tools"] = xai_tools

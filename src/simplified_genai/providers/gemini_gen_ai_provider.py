@@ -40,10 +40,13 @@ class GeminiGenAiProvider(IGenAiProvider):
         self,
         api_key: str,
         default_model: str,
+        base_url: str | None = None,
     ) -> None:
-        self.__llm_client = genai.Client(api_key=api_key)
+        self.__llm_client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(base_url=base_url) if base_url else None,
+        )
         self.__default_model = default_model
-        self.__default_temperature = 0.2
         self.__default_max_tool_iterations = 10
 
     @override
@@ -324,9 +327,7 @@ class GeminiGenAiProvider(IGenAiProvider):
         """Build a GenerateContentConfig from the common parameters."""
         return GenerateContentConfig(
             response_mime_type="application/json" if gemini_tools is None else None,
-            temperature=(
-                temperature if temperature is not None else self.__default_temperature
-            ),
+            temperature=temperature,
             system_instruction=system_prompt,
             thinking_config=thinking_config,
             tools=gemini_tools,

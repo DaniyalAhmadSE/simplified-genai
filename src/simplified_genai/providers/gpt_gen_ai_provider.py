@@ -15,7 +15,10 @@ from simplified_genai.models.file_upload_response import (
     FileUploadResponse,
 )
 from simplified_genai.models.file_payload import FilePayload
-from simplified_genai.models.gen_ai_chat_message import GenAiChatMessage
+from simplified_genai.models.gen_ai_chat_message import (
+    GenAiChatMessage,
+    GenAiChatMessageRole,
+)
 from simplified_genai.models.gpt_upload_result_dto import GptUploadResultDto
 from simplified_genai.models.tool_definition import ToolDefinition
 
@@ -25,10 +28,10 @@ class GptGenAiProvider(IGenAiProvider):
         self,
         api_key: str,
         default_model: str,
+        base_url: str | None = None,
     ) -> None:
-        self.__llm_client = AsyncOpenAI(api_key=api_key)
+        self.__llm_client = AsyncOpenAI(api_key=api_key, base_url=base_url)
         self.__default_model = default_model
-        self.__default_temperature = 0.2
         self.__default_max_tool_iterations = 5
 
     @override
@@ -57,21 +60,19 @@ class GptGenAiProvider(IGenAiProvider):
                 "user_prompt, files, and file_upload_results cannot be null at the same time."
             )
 
-        input_items = await self.__build_input(
-            user_prompt, system_prompt, files, existing_file_upload_results, messages
-        )
-
-        _temperature = (
-            temperature
-            if temperature is not None
-            else (
-                self.__default_temperature
-                if self.__check_if_supports_temperature(model)
-                else Omit()
-            )
-        )
+        file_upload_results: list[GptUploadResultDto] = []
+        _temperature = temperature if temperature is not None else Omit()
 
         try:
+            file_upload_results = await self.__get_uploaded_file_payloads_as_dto(
+                files, existing_file_upload_results
+            )
+            input_items = self.__build_input(
+                user_prompt,
+                system_prompt,
+                file_upload_results,
+                messages,
+            )
             if not tools:
                 # pyrefly: ignore [no-matching-overload]
                 response = await self.__llm_client.responses.create(
@@ -152,7 +153,7 @@ class GptGenAiProvider(IGenAiProvider):
             raise
         finally:
             if auto_delete_files:
-                await self.delete_uploaded_files(existing_file_upload_results)
+                await self.delete_uploaded_files(file_upload_results)
 
     @override
     async def get_structured_response[T: BaseModel](
@@ -180,21 +181,16 @@ class GptGenAiProvider(IGenAiProvider):
                 "user_prompt, files, and file_upload_results cannot be null at the same time."
             )
 
-        input_items = await self.__build_input(
-            user_prompt, system_prompt, files, existing_file_upload_results
-        )
-
-        _temperature = (
-            temperature
-            if temperature is not None
-            else (
-                self.__default_temperature
-                if self.__check_if_supports_temperature(model)
-                else Omit()
-            )
-        )
+        file_upload_results: list[GptUploadResultDto] = []
+        _temperature = temperature if temperature is not None else Omit()
 
         try:
+            file_upload_results = await self.__get_uploaded_file_payloads_as_dto(
+                files, existing_file_upload_results
+            )
+            input_items = self.__build_input(
+                user_prompt, system_prompt, file_upload_results
+            )
             if not tools:
                 # Fast path: no tools, use responses.parse
                 response = await self.__llm_client.responses.parse(
@@ -276,7 +272,7 @@ class GptGenAiProvider(IGenAiProvider):
             raise
         finally:
             if auto_delete_files:
-                await self.delete_uploaded_files(existing_file_upload_results)
+                await self.delete_uploaded_files(file_upload_results)
 
     @override
     async def upload_file(self, file: FilePayload) -> GptUploadResultDto:
@@ -292,6 +288,7 @@ class GptGenAiProvider(IGenAiProvider):
             file_payload: dict[str, Any] = {
                 "type": "input_image",
                 "file_id": uploaded_file.id,
+                "detail": "auto",
             }
         else:
             file_payload = {"type": "input_file", "file_id": uploaded_file.id}
@@ -315,9 +312,6 @@ class GptGenAiProvider(IGenAiProvider):
                         logger.error(f"Failed to delete file {file_id}: {e}")
 
     def __get_purpose(self, file: FilePayload):
-        if self.__is_image(file.mime_type):
-            logger.info("Image detected, setting purpose to image.")
-            return "vision"
         return "assistants"
 
     def __convert_to_openai_tools(self, tools: Iterable[ToolDefinition]) -> list[Any]:
@@ -338,12 +332,11 @@ class GptGenAiProvider(IGenAiProvider):
             if getattr(item, "type", None) == "function_call"
         ]
 
-    async def __build_input(
+    def __build_input(
         self,
         user_prompt: str | None,
         system_prompt: str | None,
-        files: list[FilePayload],
-        file_upload_results: list[FileUploadResponse],
+        file_upload_results: list[GptUploadResultDto],
         messages: Iterable[GenAiChatMessage] = [],
     ) -> list[dict[str, Any]]:
         input_items: list[dict[str, Any]] = []
@@ -355,7 +348,16 @@ class GptGenAiProvider(IGenAiProvider):
             input_items.append(
                 {
                     "role": msg.role.value,
-                    "content": [{"type": "input_text", "text": msg.content}],
+                    "content": [
+                        {
+                            "type": (
+                                "input_text"
+                                if msg.role == GenAiChatMessageRole.USER
+                                else "output_text"
+                            ),
+                            "text": msg.content,
+                        }
+                    ],
                 }
             )
 
@@ -364,11 +366,7 @@ class GptGenAiProvider(IGenAiProvider):
         if user_prompt:
             user_content.append({"type": "input_text", "text": user_prompt})
 
-        uploaded_file_payloads = await self.__get_uploaded_file_payloads(
-            files, file_upload_results
-        )
-
-        user_content.extend(uploaded_file_payloads)
+        user_content.extend([result.file_payload for result in file_upload_results])
 
         if user_content:
             input_items.append({"role": "user", "content": user_content})
@@ -380,20 +378,19 @@ class GptGenAiProvider(IGenAiProvider):
     ) -> list[GptUploadResultDto]:
         return [await self.upload_file(file) for file in files]
 
-    async def __get_uploaded_file_payloads(
+    async def __get_uploaded_file_payloads_as_dto(
         self,
         files: list[FilePayload],
         file_upload_results: list[FileUploadResponse],
-    ) -> list[dict[str, Any]]:
-        uploaded_file_payloads = [
-            upload_result.file_payload
-            for upload_result in (await self.__upload_files(files))
+    ) -> list[GptUploadResultDto]:
+        uploaded_file_payloads: list[GptUploadResultDto] = [
+            upload_result for upload_result in (await self.__upload_files(files))
         ]
 
         for result in file_upload_results:
             if not isinstance(result, GptUploadResultDto):
                 raise TypeError("Invalid file upload result")
-            uploaded_file_payloads.append(result.file_payload)
+            uploaded_file_payloads.append(result)
 
         return uploaded_file_payloads
 
@@ -403,17 +400,6 @@ class GptGenAiProvider(IGenAiProvider):
     def __get_text_format_schema[T: BaseModel](self, schema: type[T]):
         sanitized_name = re.sub(r"[^a-zA-Z0-9_-]", "_", schema.__name__)[:64]
         return type(sanitized_name, (schema,), {})
-
-    def __check_if_supports_temperature(self, model: str) -> bool:
-        unsupported_prefixes = (
-            "o1",
-            "o3",
-            "o4",
-            "gpt-5.5",
-            "gpt-5-pro",
-            "gpt-5-reasoning",
-        )
-        return not any(model.startswith(prefix) for prefix in unsupported_prefixes)
 
     def __get_validated_model(self, model: str | None) -> str:
         return model if model else self.__default_model
